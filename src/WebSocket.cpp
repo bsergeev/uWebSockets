@@ -74,7 +74,7 @@ typename WebSocket<isServer>::PreparedMessage *WebSocket<isServer>::prepareMessa
  *
  */
 template <bool isServer>
-typename WebSocket<isServer>::PreparedMessage *WebSocket<isServer>::prepareMessageBatch(std::vector<std::string> &messages, std::vector<int> &excludedMessages, OpCode opCode, bool compressed, void (*callback)(WebSocket<isServer> *, void *, bool, void *))
+typename WebSocket<isServer>::PreparedMessage* WebSocket<isServer>::prepareMessageBatch(std::vector<std::string> &messages, std::vector<int> &excludedMessages, OpCode opCode, bool compressed, void (*callback)(WebSocket<isServer> *, void *, bool, void *))
 {
     // should be sent in!
     size_t batchLength = 0;
@@ -82,10 +82,10 @@ typename WebSocket<isServer>::PreparedMessage *WebSocket<isServer>::prepareMessa
         batchLength += messages[i].length();
     }
 
-    PreparedMessage *preparedMessage = new PreparedMessage;
+    PreparedMessage* preparedMessage = new PreparedMessage;
     preparedMessage->buffer = new char[batchLength + 10 * messages.size()];
 
-    int offset = 0;
+    size_t offset = 0;
     for (size_t i = 0; i < messages.size(); i++) {
         offset += WebSocketProtocol<isServer, WebSocket<isServer>>::formatMessage(preparedMessage->buffer + offset, messages[i].data(), messages[i].length(), opCode, messages[i].length(), compressed);
     }
@@ -367,7 +367,7 @@ bool WebSocket<isServer>::handleFragment(char *data, size_t length, unsigned int
             }
         } else {
             webSocket->fragmentBuffer.append(data, length);
-            webSocket->controlTipLength += length;
+            webSocket->controlTipLength = static_cast<unsigned char>(webSocket->controlTipLength + length);
 
             if (!remainingBytes && fin) {
                 char *controlBuffer = (char *) webSocket->fragmentBuffer.data() + webSocket->fragmentBuffer.length() - webSocket->controlTipLength;
@@ -399,7 +399,7 @@ bool WebSocket<isServer>::handleFragment(char *data, size_t length, unsigned int
     return false;
 }
 
-template struct WebSocket<Role::SERVER>;
-template struct WebSocket<Role::CLIENT>;
+template UWS_API struct WebSocket<Role::SERVER>;
+template UWS_API struct WebSocket<Role::CLIENT>;
 
 }

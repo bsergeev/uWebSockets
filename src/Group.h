@@ -16,23 +16,23 @@ enum ListenOptions {
 struct Hub;
 
 template <bool isServer>
-struct WIN32_EXPORT Group : protected uS::NodeData {
+struct UWS_API Group : protected uS::NodeData {
 protected:
     friend struct Hub;
     friend struct WebSocket<isServer>;
     friend struct HttpSocket<false>;
     friend struct HttpSocket<true>;
 
-    std::function<void(WebSocket<isServer> *, HttpRequest)> connectionHandler;
-    std::function<void(WebSocket<isServer> *)> transferHandler;
-    std::function<void(WebSocket<isServer> *, char *message, size_t length, OpCode opCode)> messageHandler;
-    std::function<void(WebSocket<isServer> *, int code, char *message, size_t length)> disconnectionHandler;
-    std::function<void(WebSocket<isServer> *, char *, size_t)> pingHandler;
-    std::function<void(WebSocket<isServer> *, char *, size_t)> pongHandler;
-    std::function<void(HttpSocket<isServer> *)> httpConnectionHandler;
-    std::function<void(HttpResponse *, HttpRequest, char *, size_t, size_t)> httpRequestHandler;
-    std::function<void(HttpResponse *, char *, size_t, size_t)> httpDataHandler;
-    std::function<void(HttpResponse *)> httpCancelledRequestHandler;
+    std::function<void(WebSocket<isServer>*, HttpRequest)> connectionHandler;
+    std::function<void(WebSocket<isServer>*)>              transferHandler;
+    std::function<void(WebSocket<isServer>*, char *message, size_t length, OpCode opCode)> messageHandler;
+    std::function<void(WebSocket<isServer>*, int code, char *message, size_t length)> disconnectionHandler;
+    std::function<void(WebSocket<isServer>*, char *, size_t)> pingHandler;
+    std::function<void(WebSocket<isServer>*, char *, size_t)> pongHandler;
+    std::function<void(HttpSocket<isServer>*)> httpConnectionHandler;
+    std::function<void(HttpResponse*, HttpRequest, char *, size_t, size_t)> httpRequestHandler;
+    std::function<void(HttpResponse*, char *, size_t, size_t)> httpDataHandler;
+    std::function<void(HttpResponse*)> httpCancelledRequestHandler;
     std::function<void(HttpSocket<isServer> *)> httpDisconnectionHandler;
     std::function<void(HttpSocket<isServer> *, HttpRequest)> httpUpgradeHandler;
 

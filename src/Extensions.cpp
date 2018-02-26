@@ -1,13 +1,14 @@
 #include "Extensions.h"
+#include "Networking.h"
 
 namespace uWS {
 
 enum ExtensionTokens {
-    TOK_PERMESSAGE_DEFLATE = 1838,
+    TOK_PERMESSAGE_DEFLATE         = 1838,
     TOK_SERVER_NO_CONTEXT_TAKEOVER = 2807,
     TOK_CLIENT_NO_CONTEXT_TAKEOVER = 2783,
-    TOK_SERVER_MAX_WINDOW_BITS = 2372,
-    TOK_CLIENT_MAX_WINDOW_BITS = 2348
+    TOK_SERVER_MAX_WINDOW_BITS     = 2372,
+    TOK_CLIENT_MAX_WINDOW_BITS     = 2348
 };
 
 class ExtensionsParser {
@@ -125,7 +126,7 @@ int ExtensionsNegotiator<isServer>::getNegotiatedOptions() {
     return options;
 }
 
-template class ExtensionsNegotiator<true>;
-template class ExtensionsNegotiator<false>;
+template UWS_API class ExtensionsNegotiator<Role::SERVER>;
+template UWS_API class ExtensionsNegotiator<Role::CLIENT>;
 
 }

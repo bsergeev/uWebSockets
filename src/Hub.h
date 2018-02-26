@@ -10,7 +10,7 @@
 
 namespace uWS {
 
-struct WIN32_EXPORT Hub : protected uS::Node, public Group<Role::SERVER>, public Group<Role::CLIENT> {
+struct UWS_API Hub : protected uS::Node, public Group<Role::SERVER>, public Group<Role::CLIENT> {
 protected:
     struct ConnectionData {
         std::string path;

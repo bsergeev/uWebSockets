@@ -7,12 +7,13 @@ void testWsConnection(const std::string& url) {
   uWS::Hub h;
 
   h.onError([](void *user) {
-    std::cout << "FAILURE: " << (long)user << " should not emit error!" << std::endl;
+    std::cout << "FAILURE: " << (size_t)user << " should not emit error!" << std::endl;
   });
 
   h.onMessage([](uWS::WebSocket<uWS::Role::CLIENT>* ws, char* message, size_t length, uWS::OpCode opCode) {
-    std::cout << "Client got a message: <" << ((length > 1)? std::string(message, length-1):"") << ">" << std::endl;
-    ws->close(1234);
+    std::cout << "Client got a message: \"" << ((length > 1)? std::string(message, length-1):"") << "\"" << std::endl;
+    const std::string close_message = "Enough fun, disconnecting";
+    ws->close(1234, close_message.c_str(), close_message.length());
   });
 
 
@@ -23,8 +24,8 @@ void testWsConnection(const std::string& url) {
   });
 
   h.onDisconnection([](uWS::WebSocket<uWS::Role::CLIENT>* ws, int code, char* message, size_t length) {
-    std::cout << "Client got disconnected with data: "<< (int)ws->getUserData() 
-              << ", code: " << code << ", message: <" << std::string(message, length) << ">" << std::endl;
+    std::cout << "Client got disconnected with data: "<< (size_t)ws->getUserData() 
+              << ", code: " << code << ", message: \"" << std::string(message, length) << "\"" << std::endl;
   });
 
   std::cout << "Connecting to \"" << url << "\"\n";

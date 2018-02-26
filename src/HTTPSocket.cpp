@@ -304,7 +304,7 @@ void HttpSocket<isServer>::onEnd(uS::Socket *s) {
     }
 }
 
-template struct HttpSocket<Role::SERVER>;
-template struct HttpSocket<Role::CLIENT>;
+template UWS_API struct HttpSocket<Role::SERVER>;
+template UWS_API struct HttpSocket<Role::CLIENT>;
 
 }

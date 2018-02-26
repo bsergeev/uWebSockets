@@ -3,6 +3,7 @@ set(REQUIRED_CPP_VERSION 11)
 
 set(PROJECT_NAME uWS)
 project(${PROJECT_NAME} CXX)
+option(BUILD_STATIC_LIBS "Build the static library" ON)
 
 # gather the files
 set(Backend_headers
@@ -29,15 +30,15 @@ set(Header_Files
 )
 FILE(GLOB Source_Files "${PROJECT_SOURCE_DIR}/src/*.cpp")
 
-add_library(${PROJECT_NAME} STATIC ${Source_Files} ${Header_Files})
+if (BUILD_STATIC_LIBS)
+  set(UWS_STATIC_LIB "UWS_STATIC_LIB=1")
+  add_library(${PROJECT_NAME} STATIC ${Source_Files} ${Header_Files})
+else()  
+  set(UWS_STATIC_LIB "UWS_STATIC_LIB=0")
+  add_library(${PROJECT_NAME} SHARED ${Source_Files} ${Header_Files})
+endif()
 
 include_directories("src")
-# target_include_directories(${PROJECT_NAME} PRIVATE "${ASIO_INCLUDE_DIR}")
-
-# Unfortunately, I haven't figured out how to wrap ASIO Standalone to correctly
-# define uv_os_sock_t (and probably Poll class too). Therefore, removing 
-# ASIO_STANDALONE and using Boost ASIO
-# target_compile_definitions(${PROJECT_NAME} PRIVATE USE_ASIO ASIO_STANDALONE=1) 
 
 # find_package(OpenSSL REQUIRED)
 # target_link_libraries(${PROJECT_NAME} PRIVATE OpenSSL::SSL OpenSSL::Crypto)
@@ -52,6 +53,9 @@ add_executable(WsClient samples/ws_client.cpp)
 target_link_libraries(WsClient LINK_PUBLIC ${PROJECT_NAME})
 
 if (MSVC)
+  target_compile_definitions(${PROJECT_NAME} PUBLIC  ${UWS_STATIC_LIB})
+  target_compile_definitions(${PROJECT_NAME} PRIVATE BUILDING_UWS_LIB _CRT_SECURE_NO_WARNINGS _CRT_SECURE_NO_DEPRECATE)
+  
   set_property(GLOBAL PROPERTY USE_FOLDERS ON)
   set_target_properties(HttpServer           PROPERTIES FOLDER Samples)
   set_target_properties(HttpServerSentEvents PROPERTIES FOLDER Samples)

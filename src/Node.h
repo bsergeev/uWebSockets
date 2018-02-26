@@ -12,7 +12,7 @@ enum ListenOptions : int {
     ONLY_IPV4 = 2
 };
 
-class WIN32_EXPORT Node {
+class UWS_API Node {
 protected:
     template <void C(Socket *p, bool error)>
     static void connect_cb(Poll *p, int status, int events) {
@@ -107,7 +107,8 @@ public:
             return nullptr;
         }
 
-        ::connect(fd, result->ai_addr, result->ai_addrlen);
+        assert(result->ai_addrlen <= std::numeric_limits<int>::max());
+        ::connect(fd, result->ai_addr, static_cast<int>(result->ai_addrlen));
         freeaddrinfo(result);
 
         SSL *ssl = nullptr;
@@ -176,7 +177,8 @@ public:
         int enabled = true;
         setsockopt(listenFd, SOL_SOCKET, SO_REUSEADDR, &enabled, sizeof(enabled));
 
-        if (::bind(listenFd, listenAddr->ai_addr, listenAddr->ai_addrlen) || ::listen(listenFd, 512)) {
+        assert(listenAddr->ai_addrlen <= std::numeric_limits<int>::max());
+        if (::bind(listenFd, listenAddr->ai_addr, static_cast<int>(listenAddr->ai_addrlen)) || ::listen(listenFd, 512)) {
             netContext->closeSocket(listenFd);
             freeaddrinfo(result);
             return true;

@@ -23,36 +23,45 @@
 #endif
 
 #ifdef _WIN32
-#define NOMINMAX
-#include <WinSock2.h>
-#include <Ws2tcpip.h>
-#pragma comment(lib, "ws2_32.lib")
-#define SHUT_WR SD_SEND
-#ifdef __MINGW32__
-// Windows has always been tied to LE
-#define htobe64(x) __builtin_bswap64(x)
-#define be64toh(x) __builtin_bswap64(x)
-#else
-#define __thread __declspec(thread)
-#define htobe64(x) htonll(x)
-#define be64toh(x) ntohll(x)
-#define pthread_t DWORD
-#define pthread_self GetCurrentThreadId
-#endif
-#define WIN32_EXPORT __declspec(dllexport)
+  #define NOMINMAX
+  #include <WinSock2.h>
+  #include <Ws2tcpip.h>
+  #pragma comment(lib, "ws2_32.lib")
+  #define SHUT_WR SD_SEND
+  #ifdef __MINGW32__
+    // Windows has always been tied to LE
+    #define htobe64(x) __builtin_bswap64(x)
+    #define be64toh(x) __builtin_bswap64(x)
+  #else
+    #define __thread __declspec(thread)
+    #define htobe64(x) htonll(x)
+    #define be64toh(x) ntohll(x)
+    #define pthread_t DWORD
+    #define pthread_self GetCurrentThreadId
+  #endif
 
-inline void close(SOCKET fd) {closesocket(fd);}
-inline int setsockopt(SOCKET fd, int level, int optname, const void *optval, socklen_t optlen) {
-    return setsockopt(fd, level, optname, (const char *) optval, optlen);
-}
-
-inline SOCKET dup(SOCKET socket) {
-    WSAPROTOCOL_INFOW pi;
-    if (WSADuplicateSocketW(socket, GetCurrentProcessId(), &pi) == SOCKET_ERROR) {
-        return INVALID_SOCKET;
-    }
-    return WSASocketW(pi.iAddressFamily, pi.iSocketType, pi.iProtocol, &pi, 0, WSA_FLAG_OVERLAPPED);
-}
+  #if (UWS_STATIC_LIB == 1)
+    #define UWS_API
+  #else
+    #ifdef BUILDING_UWS_LIB
+      #define UWS_API __declspec(dllexport)
+    #else
+      #define UWS_API __declspec(dllimport)
+    #endif
+  #endif
+  
+  inline void close(SOCKET fd) {closesocket(fd);}
+  inline int setsockopt(SOCKET fd, int level, int optname, const void *optval, socklen_t optlen) {
+      return setsockopt(fd, level, optname, (const char *) optval, optlen);
+  }
+  
+  inline SOCKET dup(SOCKET socket) {
+      WSAPROTOCOL_INFOW pi;
+      if (WSADuplicateSocketW(socket, GetCurrentProcessId(), &pi) == SOCKET_ERROR) {
+          return INVALID_SOCKET;
+      }
+      return WSASocketW(pi.iAddressFamily, pi.iSocketType, pi.iProtocol, &pi, 0, WSA_FLAG_OVERLAPPED);
+  }
 #else
 #include <sys/socket.h>
 #include <netinet/in.h>
@@ -63,7 +72,7 @@ inline SOCKET dup(SOCKET socket) {
 #include <cstring>
 #define SOCKET_ERROR -1
 #define INVALID_SOCKET -1
-#define WIN32_EXPORT
+#define UWS_API
 #endif
 
 #include "Backend.h"
@@ -75,7 +84,15 @@ inline SOCKET dup(SOCKET socket) {
 #include <algorithm>
 #include <memory>
 
+namespace uWS {
+namespace Role {
+  constexpr bool CLIENT = false;
+  constexpr bool SERVER = true;
+};
+}
+
 namespace uS {
+
 
 // todo: mark sockets nonblocking in these functions
 // todo: probably merge this Context with the TLS::Context for same interface for SSL and non-SSL!
@@ -156,7 +173,7 @@ struct Context {
 
 namespace TLS {
 
-class WIN32_EXPORT Context {
+class UWS_API Context {
 protected:
     SSL_CTX *context = nullptr;
     std::shared_ptr<std::string> password;
@@ -171,7 +188,7 @@ protected:
     }
 
 public:
-    friend Context WIN32_EXPORT createContext(std::string certChainFileName, std::string keyFileName, std::string keyFilePassword);
+    friend Context UWS_API createContext(std::string certChainFileName, std::string keyFileName, std::string keyFilePassword);
     Context(SSL_CTX *context) : context(context) {
 
     }
@@ -189,14 +206,14 @@ public:
     }
 };
 
-Context WIN32_EXPORT createContext(std::string certChainFileName, std::string keyFileName, std::string keyFilePassword = std::string());
+Context UWS_API createContext(std::string certChainFileName, std::string keyFileName, std::string keyFilePassword = std::string());
 
 }
 
 struct Socket;
 
 // NodeData is like a Context, maybe merge them?
-struct WIN32_EXPORT NodeData {
+struct UWS_API NodeData {
     char *recvBufferMemoryBlock;
     char *recvBuffer;
     int recvLength;

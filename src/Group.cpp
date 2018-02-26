@@ -257,7 +257,7 @@ void Group<isServer>::close(int code, char *message, size_t length) {
     }
 }
 
-template struct Group<true>;
-template struct Group<false>;
+template UWS_API struct Group<Role::CLIENT>;
+template UWS_API struct Group<Role::SERVER>;
 
 }

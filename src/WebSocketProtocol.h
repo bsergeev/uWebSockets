@@ -4,6 +4,7 @@
 // we do need to include this for htobe64, should be moved from networking!
 #include "Networking.h"
 
+#include <cassert>
 #include <cstring>
 #include <cstdlib>
 
@@ -15,11 +16,6 @@ enum OpCode : unsigned char {
     CLOSE = 8,
     PING = 9,
     PONG = 10
-};
-
-namespace Role {
-  constexpr bool CLIENT = false;
-  constexpr bool SERVER = true;
 };
 
 // 24 bytes perfectly
@@ -56,7 +52,7 @@ public:
 };
 
 template <const bool isServer, class Impl>
-class WIN32_EXPORT WebSocketProtocol {
+class UWS_API WebSocketProtocol {
 public:
     static const unsigned int SHORT_MESSAGE_HEADER = isServer ? 6 : 2;
     static const unsigned int MEDIUM_MESSAGE_HEADER = isServer ? 8 : 4;
@@ -142,7 +138,7 @@ protected:
             }
 
             src += payLength + MESSAGE_HEADER;
-            length -= payLength + MESSAGE_HEADER;
+            length -= static_cast<unsigned int>(payLength + MESSAGE_HEADER);
             wState->state.spillLength = 0;
             return false;
         } else {
@@ -276,16 +272,17 @@ public:
         return 0;
     }
 
-    static inline size_t formatMessage(char *dst, const char *src, size_t length, OpCode opCode, size_t reportedLength, bool compressed) {
+    static inline size_t formatMessage(char* dst, const char *src, size_t length, OpCode opCode, size_t reportedLength, bool compressed) {
         size_t messageLength;
         size_t headerLength;
         if (reportedLength < 126) {
             headerLength = 2;
-            dst[1] = reportedLength;
+            dst[1] = static_cast<char>(reportedLength);
         } else if (reportedLength <= UINT16_MAX) {
             headerLength = 4;
             dst[1] = 126;
-            *((uint16_t *) &dst[2]) = htons(reportedLength);
+            assert(reportedLength <= std::numeric_limits<u_short>::max());
+            *((uint16_t*) &dst[2]) = htons(static_cast<u_short>(reportedLength));
         } else {
             headerLength = 10;
             dst[1] = 127;

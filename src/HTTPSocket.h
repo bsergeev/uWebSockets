@@ -106,7 +106,7 @@ struct HttpRequest {
 struct HttpResponse;
 
 template <const bool isServer>
-struct WIN32_EXPORT HttpSocket : uS::Socket {
+struct UWS_API HttpSocket : uS::Socket {
     void *httpUser; // remove this later, setTimeout occupies user for now
     HttpResponse *outstandingResponsesHead = nullptr;
     HttpResponse *outstandingResponsesTail = nullptr;
@@ -202,9 +202,15 @@ struct HttpResponse {
                 return length + 128;
             }
 
-            static size_t transform(const char *src, char *dst, size_t length, TransformData transformData) {
+            static size_t transform(const char* src, char* dst, size_t length, TransformData transformData) {
                 // todo: sprintf is extremely slow
-                int offset = transformData.hasHead ? 0 : std::sprintf(dst, "HTTP/1.1 200 OK\r\nContent-Length: %u\r\n\r\n", (unsigned int) length);
+                size_t offset = 0;
+                if (!transformData.hasHead) {
+                  //offset = std::sprintf(dst, "HTTP/1.1 200 OK\r\nContent-Length: %u\r\n\r\n", (unsigned int)length);
+                  std::string m = "HTTP/1.1 200 OK\r\nContent-Length: "+ std::to_string(length) +"\r\n\r\n";
+                  offset = m.length();
+                  memcpy(dst, m.data(), offset);
+                }
                 memcpy(dst + offset, src, length);
                 return length + offset;
             }
@@ -212,7 +218,7 @@ struct HttpResponse {
 
         if (httpSocket->outstandingResponsesHead != this) {
             HttpSocket<true>::Queue::Message *messagePtr = httpSocket->allocMessage(HttpTransformer::estimate(message, length));
-            messagePtr->length = HttpTransformer::transform(message, (char *) messagePtr->data, length, transformData);
+            messagePtr->length = HttpTransformer::transform(message, (char*) messagePtr->data, length, transformData);
             messagePtr->callback = callback;
             messagePtr->callbackData = callbackData;
             messagePtr->nextMessage = messageQueue;

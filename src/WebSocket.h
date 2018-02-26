@@ -13,7 +13,7 @@ template <bool isServer>
 struct HttpSocket;
 
 template <const bool isServer>
-struct WIN32_EXPORT WebSocket : uS::Socket, WebSocketState<isServer> {
+struct UWS_API WebSocket : uS::Socket, WebSocketState<isServer> {
 protected:
     std::string fragmentBuffer;
     enum CompressionStatus : char {

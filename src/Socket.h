@@ -2,6 +2,7 @@
 #define SOCKET_UWS_H
 
 #include "Networking.h"
+#include <cassert>
 
 namespace uS {
 
@@ -23,7 +24,7 @@ struct TransferData {
 };
 
 // perfectly 64 bytes (4 + 60)
-struct WIN32_EXPORT Socket : Poll {
+struct UWS_API Socket : Poll {
 protected:
     struct {
         int poll : 4;
@@ -229,7 +230,8 @@ protected:
                 socket->cork(true);
                 while (true) {
                     Queue::Message *messagePtr = socket->messageQueue.front();
-                    ssize_t sent = ::send(socket->getFd(), messagePtr->data, messagePtr->length, MSG_NOSIGNAL);
+                    assert(messagePtr->length <= std::numeric_limits<int>::max());
+                    ssize_t sent = ::send(socket->getFd(), messagePtr->data, static_cast<int>(messagePtr->length), MSG_NOSIGNAL);
                     if (sent == (ssize_t) messagePtr->length) {
                         if (messagePtr->callback) {
                             messagePtr->callback(p, messagePtr->callbackData, false, messagePtr->reserved);
@@ -325,7 +327,8 @@ protected:
                     }
                 }
             } else {
-                sent = ::send(getFd(), message->data, message->length, MSG_NOSIGNAL);
+                assert(message->length <= std::numeric_limits<int>::max());
+                sent = ::send(getFd(), message->data, static_cast<int>(message->length), MSG_NOSIGNAL);
                 if (sent == (ssize_t) message->length) {
                     wasTransferred = false;
                     return true;
