@@ -12,7 +12,7 @@ void testWsConnection(const std::string& url) {
 
   h.onMessage([](uWS::WebSocket<uWS::Role::CLIENT>* ws, char* message, size_t length, uWS::OpCode opCode) {
     std::cout << "Client got a message: \"" << ((length > 1)? std::string(message, length-1):"") << "\"" << std::endl;
-    const std::string close_message = "Enough fun, disconnecting";
+    static const std::string close_message = "Enough fun, disconnecting";
     ws->close(1234, close_message.c_str(), close_message.length());
   });
 
@@ -29,7 +29,7 @@ void testWsConnection(const std::string& url) {
   });
 
   std::cout << "Connecting to \"" << url << "\"\n";
-  h.connect(url, (void*)9);
+  h.connect(url, (void*)13);
 
   h.run();
 }

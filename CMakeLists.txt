@@ -3,7 +3,7 @@ set(REQUIRED_CPP_VERSION 11)
 
 set(PROJECT_NAME uWS)
 project(${PROJECT_NAME} CXX)
-option(BUILD_STATIC_LIBS "Build the static library" ON)
+option(BUILD_STATIC_LIBS "Build the static library" OFF)
 
 # gather the files
 set(Backend_headers
@@ -43,26 +43,28 @@ include_directories("src")
 # find_package(OpenSSL REQUIRED)
 # target_link_libraries(${PROJECT_NAME} PRIVATE OpenSSL::SSL OpenSSL::Crypto)
 
-add_executable(HttpServer samples/http_server.cpp)
-target_link_libraries(HttpServer LINK_PUBLIC ${PROJECT_NAME})
-
-add_executable(HttpServerSentEvents samples/http_server_sent_events.cpp)
-target_link_libraries(HttpServerSentEvents LINK_PUBLIC ${PROJECT_NAME})
-
-add_executable(WsClient samples/ws_client.cpp)
-target_link_libraries(WsClient LINK_PUBLIC ${PROJECT_NAME})
+# Generate separate projects for each .cpp file in samples folder
+file(GLOB SampleFiles "samples/*.cpp")
+message(STATUS ">>> Generating samples")
+foreach(infileName ${SampleFiles})
+  message(STATUS "    Process file: ${infileName}")
+  get_filename_component(sampleName "${infileName}" NAME_WE)
+  add_executable       (${sampleName} "${infileName}")
+  target_link_libraries(${sampleName} LINK_PUBLIC ${PROJECT_NAME})
+  set_target_properties(${sampleName} PROPERTIES COMPILE_FLAGS "/wd4251 /wd4275") # suppress dll import/export warnings 
+  if (MSVC)
+    set_target_properties(${sampleName} PROPERTIES FOLDER Samples)
+    set_property(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR} PROPERTY VS_STARTUP_PROJECT ${sampleName}) # last one will be active
+  endif()
+endforeach(infileName)
 
 if (MSVC)
   target_compile_definitions(${PROJECT_NAME} PUBLIC  ${UWS_STATIC_LIB})
+  set_target_properties     (${PROJECT_NAME} PROPERTIES COMPILE_FLAGS "/wd4251 /wd4275") # suppress dll import/export warnings
   target_compile_definitions(${PROJECT_NAME} PRIVATE BUILDING_UWS_LIB _CRT_SECURE_NO_WARNINGS _CRT_SECURE_NO_DEPRECATE)
-  
-  set_property(GLOBAL PROPERTY USE_FOLDERS ON)
-  set_target_properties(HttpServer           PROPERTIES FOLDER Samples)
-  set_target_properties(HttpServerSentEvents PROPERTIES FOLDER Samples)
-  set_target_properties(WsClient             PROPERTIES FOLDER Samples)
-  set_property(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR} PROPERTY VS_STARTUP_PROJECT WsClient)
 
   # Project filters (to group files in IDE project)
+  set_property(GLOBAL PROPERTY USE_FOLDERS ON)
   source_group("Header Files\\Backends" FILES ${Backend_headers})
   source_group("Source Files\\Backends" FILES "${PROJECT_SOURCE_DIR}/src/Epoll.cpp")
   set_property(TARGET ${PROJECT_NAME} PROPERTY CXX_STANDARD ${REQUIRED_CPP_VERSION})
