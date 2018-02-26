@@ -399,7 +399,7 @@ bool WebSocket<isServer>::handleFragment(char *data, size_t length, unsigned int
     return false;
 }
 
-template struct WebSocket<SERVER>;
-template struct WebSocket<CLIENT>;
+template struct WebSocket<Role::SERVER>;
+template struct WebSocket<Role::CLIENT>;
 
 }

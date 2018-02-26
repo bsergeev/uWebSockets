@@ -42,32 +42,32 @@ char *Hub::inflate(char *data, size_t &length, size_t maxPayload) {
 }
 
 void Hub::onServerAccept(uS::Socket *s) {
-    HttpSocket<SERVER> *httpSocket = new HttpSocket<SERVER>(s);
+    HttpSocket<Role::SERVER> *httpSocket = new HttpSocket<Role::SERVER>(s);
     delete s;
 
-    httpSocket->setState<HttpSocket<SERVER>>();
+    httpSocket->setState<HttpSocket<Role::SERVER>>();
     httpSocket->start(httpSocket->nodeData->loop, httpSocket, httpSocket->setPoll(UV_READABLE));
     httpSocket->setNoDelay(true);
-    Group<SERVER>::from(httpSocket)->addHttpSocket(httpSocket);
-    Group<SERVER>::from(httpSocket)->httpConnectionHandler(httpSocket);
+    Group<Role::SERVER>::from(httpSocket)->addHttpSocket(httpSocket);
+    Group<Role::SERVER>::from(httpSocket)->httpConnectionHandler(httpSocket);
 }
 
 void Hub::onClientConnection(uS::Socket *s, bool error) {
-    HttpSocket<CLIENT> *httpSocket = (HttpSocket<CLIENT> *) s;
+    HttpSocket<Role::CLIENT> *httpSocket = (HttpSocket<Role::CLIENT> *) s;
 
     if (error) {
         httpSocket->onEnd(httpSocket);
     } else {
-        httpSocket->setState<HttpSocket<CLIENT>>();
+        httpSocket->setState<HttpSocket<Role::CLIENT>>();
         httpSocket->change(httpSocket->nodeData->loop, httpSocket, httpSocket->setPoll(UV_READABLE));
         httpSocket->setNoDelay(true);
         httpSocket->upgrade(nullptr, nullptr, 0, nullptr, 0, nullptr);
     }
 }
 
-bool Hub::listen(const char *host, int port, uS::TLS::Context sslContext, int options, Group<SERVER> *eh) {
+bool Hub::listen(const char *host, int port, uS::TLS::Context sslContext, int options, Group<Role::SERVER> *eh) {
     if (!eh) {
-        eh = (Group<SERVER> *) this;
+        eh = (Group<Role::SERVER> *) this;
     }
 
     if (uS::Node::listen<onServerAccept>(host, port, sslContext, options, (uS::NodeData *) eh, nullptr)) {
@@ -77,12 +77,12 @@ bool Hub::listen(const char *host, int port, uS::TLS::Context sslContext, int op
     return true;
 }
 
-bool Hub::listen(int port, uS::TLS::Context sslContext, int options, Group<SERVER> *eh) {
+bool Hub::listen(int port, uS::TLS::Context sslContext, int options, Group<Role::SERVER> *eh) {
     return listen(nullptr, port, sslContext, options, eh);
 }
 
 uS::Socket *allocateHttpSocket(uS::Socket *s) {
-    return (uS::Socket *) new HttpSocket<CLIENT>(s);
+    return (uS::Socket *) new HttpSocket<Role::CLIENT>(s);
 }
 
 bool parseURI(std::string &uri, bool &secure, std::string &hostname, int &port, std::string &path) {
@@ -147,9 +147,9 @@ bool parseURI(std::string &uri, bool &secure, std::string &hostname, int &port, 
     return true;
 }
 
-void Hub::connect(std::string uri, void *user, std::map<std::string, std::string> extraHeaders, int timeoutMs, Group<CLIENT> *eh) {
+void Hub::connect(std::string uri, void *user, std::map<std::string, std::string> extraHeaders, int timeoutMs, Group<Role::CLIENT> *eh) {
     if (!eh) {
-        eh = (Group<CLIENT> *) this;
+        eh = (Group<Role::CLIENT> *) this;
     }
 
     int port;
@@ -159,10 +159,10 @@ void Hub::connect(std::string uri, void *user, std::map<std::string, std::string
     if (!parseURI(uri, secure, hostname, port, path)) {
         eh->errorHandler(user);
     } else {
-        HttpSocket<CLIENT> *httpSocket = (HttpSocket<CLIENT> *) uS::Node::connect<allocateHttpSocket, onClientConnection>(hostname.c_str(), port, secure, eh);
+        HttpSocket<Role::CLIENT> *httpSocket = (HttpSocket<Role::CLIENT> *) uS::Node::connect<allocateHttpSocket, onClientConnection>(hostname.c_str(), port, secure, eh);
         if (httpSocket) {
             // startTimeout occupies the user
-            httpSocket->startTimeout<HttpSocket<CLIENT>::onEnd>(timeoutMs);
+            httpSocket->startTimeout<HttpSocket<Role::CLIENT>::onEnd>(timeoutMs);
             httpSocket->httpUser = user;
 
             std::string randomKey = "x3JJHMbDL1EzLkh9GBhXDw==";
@@ -188,24 +188,24 @@ void Hub::connect(std::string uri, void *user, std::map<std::string, std::string
     }
 }
 
-void Hub::upgrade(uv_os_sock_t fd, const char *secKey, SSL *ssl, const char *extensions, size_t extensionsLength, const char *subprotocol, size_t subprotocolLength, Group<SERVER> *serverGroup) {
+void Hub::upgrade(uv_os_sock_t fd, const char *secKey, SSL *ssl, const char *extensions, size_t extensionsLength, const char *subprotocol, size_t subprotocolLength, Group<Role::SERVER> *serverGroup) {
     if (!serverGroup) {
-        serverGroup = &getDefaultGroup<SERVER>();
+        serverGroup = &getDefaultGroup<Role::SERVER>();
     }
 
     uS::Socket s((uS::NodeData *) serverGroup, serverGroup->loop, fd, ssl);
     s.setNoDelay(true);
 
     // todo: skip httpSocket -> it cannot fail anyways!
-    HttpSocket<SERVER> *httpSocket = new HttpSocket<SERVER>(&s);
-    httpSocket->setState<HttpSocket<SERVER>>();
+    HttpSocket<Role::SERVER> *httpSocket = new HttpSocket<Role::SERVER>(&s);
+    httpSocket->setState<HttpSocket<Role::SERVER>>();
     httpSocket->change(httpSocket->nodeData->loop, httpSocket, httpSocket->setPoll(UV_READABLE));
     bool perMessageDeflate;
     httpSocket->upgrade(secKey, extensions, extensionsLength, subprotocol, subprotocolLength, &perMessageDeflate);
 
-    WebSocket<SERVER> *webSocket = new WebSocket<SERVER>(perMessageDeflate, httpSocket);
+    WebSocket<Role::SERVER> *webSocket = new WebSocket<Role::SERVER>(perMessageDeflate, httpSocket);
     delete httpSocket;
-    webSocket->setState<WebSocket<SERVER>>();
+    webSocket->setState<WebSocket<Role::SERVER>>();
     webSocket->change(webSocket->nodeData->loop, webSocket, webSocket->setPoll(UV_READABLE));
     serverGroup->addWebSocket(webSocket);
     serverGroup->connectionHandler(webSocket, {});

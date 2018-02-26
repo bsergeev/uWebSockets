@@ -77,7 +77,7 @@ uS::Socket *HttpSocket<isServer>::onData(uS::Socket *s, char *data, size_t lengt
             return httpSocket;
         }
 
-        httpSocket->httpBuffer.reserve(httpSocket->httpBuffer.length() + length + WebSocketProtocol<uWS::CLIENT, WebSocket<uWS::CLIENT>>::CONSUME_POST_PADDING);
+        httpSocket->httpBuffer.reserve(httpSocket->httpBuffer.length() + length + WebSocketProtocol<uWS::Role::CLIENT, WebSocket<uWS::Role::CLIENT>>::CONSUME_POST_PADDING);
         httpSocket->httpBuffer.append(data, length);
         data = (char *) httpSocket->httpBuffer.data();
         length = httpSocket->httpBuffer.length();
@@ -96,8 +96,8 @@ uS::Socket *HttpSocket<isServer>::onData(uS::Socket *s, char *data, size_t lengt
                 headers->valueLength = std::max<int>(0, headers->valueLength - 9);
                 httpSocket->missedDeadline = false;
                 if (req.getHeader("upgrade", 7)) {
-                    if (Group<SERVER>::from(httpSocket)->httpUpgradeHandler) {
-                        Group<SERVER>::from(httpSocket)->httpUpgradeHandler((HttpSocket<SERVER> *) httpSocket, req);
+                    if (Group<Role::SERVER>::from(httpSocket)->httpUpgradeHandler) {
+                        Group<Role::SERVER>::from(httpSocket)->httpUpgradeHandler((HttpSocket<Role::SERVER> *) httpSocket, req);
                     } else {
                         Header secKey = req.getHeader("sec-websocket-key", 17);
                         Header extensions = req.getHeader("sec-websocket-extensions", 24);
@@ -127,7 +127,7 @@ uS::Socket *HttpSocket<isServer>::onData(uS::Socket *s, char *data, size_t lengt
                     }
                     return httpSocket;
                 } else {
-                    if (Group<SERVER>::from(httpSocket)->httpRequestHandler) {
+                    if (Group<Role::SERVER>::from(httpSocket)->httpRequestHandler) {
 
                         HttpResponse *res = HttpResponse::allocateResponse(httpSocket);
                         if (httpSocket->outstandingResponsesTail) {
@@ -141,10 +141,10 @@ uS::Socket *HttpSocket<isServer>::onData(uS::Socket *s, char *data, size_t lengt
                         if (req.getMethod() != HttpMethod::METHOD_GET && (contentLength = req.getHeader("content-length", 14))) {
                             httpSocket->contentLength = atoi(contentLength.value);
                             size_t bytesToRead = std::min<size_t>(httpSocket->contentLength, end - cursor);
-                            Group<SERVER>::from(httpSocket)->httpRequestHandler(res, req, cursor, bytesToRead, httpSocket->contentLength -= bytesToRead);
+                            Group<Role::SERVER>::from(httpSocket)->httpRequestHandler(res, req, cursor, bytesToRead, httpSocket->contentLength -= bytesToRead);
                             cursor += bytesToRead;
                         } else {
-                            Group<SERVER>::from(httpSocket)->httpRequestHandler(res, req, nullptr, 0, 0);
+                            Group<Role::SERVER>::from(httpSocket)->httpRequestHandler(res, req, nullptr, 0, 0);
                         }
 
                         if (httpSocket->isClosed() || httpSocket->isShuttingDown()) {
@@ -210,7 +210,7 @@ void HttpSocket<isServer>::upgrade(const char *secKey, const char *extensions, s
         std::string extensionsResponse;
         if (extensionsLength) {
             Group<isServer> *group = Group<isServer>::from(this);
-            ExtensionsNegotiator<uWS::SERVER> extensionsNegotiator(group->extensionOptions);
+            ExtensionsNegotiator<uWS::Role::SERVER> extensionsNegotiator(group->extensionOptions);
             extensionsNegotiator.readOffer(std::string(extensions, extensionsLength));
             extensionsResponse = extensionsNegotiator.generateOffer();
             if (extensionsNegotiator.getNegotiatedOptions() & PERMESSAGE_DEFLATE) {
@@ -300,11 +300,11 @@ void HttpSocket<isServer>::onEnd(uS::Socket *s) {
 
     if (!isServer) {
         httpSocket->cancelTimeout();
-        Group<CLIENT>::from(httpSocket)->errorHandler(httpSocket->httpUser);
+        Group<Role::CLIENT>::from(httpSocket)->errorHandler(httpSocket->httpUser);
     }
 }
 
-template struct HttpSocket<SERVER>;
-template struct HttpSocket<CLIENT>;
+template struct HttpSocket<Role::SERVER>;
+template struct HttpSocket<Role::CLIENT>;
 
 }

@@ -17,18 +17,18 @@ enum OpCode : unsigned char {
     PONG = 10
 };
 
-enum {
-    CLIENT,
-    SERVER
+namespace Role {
+  constexpr bool CLIENT = false;
+  constexpr bool SERVER = true;
 };
 
 // 24 bytes perfectly
 template <bool isServer>
 struct WebSocketState {
 public:
-    static const unsigned int SHORT_MESSAGE_HEADER = isServer ? 6 : 2;
-    static const unsigned int MEDIUM_MESSAGE_HEADER = isServer ? 8 : 4;
-    static const unsigned int LONG_MESSAGE_HEADER = isServer ? 14 : 10;
+    static const unsigned int SHORT_MESSAGE_HEADER  = isServer ?  6 : 2;
+    static const unsigned int MEDIUM_MESSAGE_HEADER = isServer ?  8 : 4;
+    static const unsigned int LONG_MESSAGE_HEADER   = isServer ? 14 : 10;
 
     // 16 bytes
     struct State {

@@ -10,12 +10,12 @@
 
 namespace uWS {
 
-struct WIN32_EXPORT Hub : protected uS::Node, public Group<SERVER>, public Group<CLIENT> {
+struct WIN32_EXPORT Hub : protected uS::Node, public Group<Role::SERVER>, public Group<Role::CLIENT> {
 protected:
     struct ConnectionData {
         std::string path;
         void *user;
-        Group<CLIENT> *group;
+        Group<Role::CLIENT> *group;
     };
 
     z_stream inflationStream = {};
@@ -38,13 +38,13 @@ public:
         return static_cast<Group<isServer> &>(*this);
     }
 
-    bool listen(int port, uS::TLS::Context sslContext = nullptr, int options = 0, Group<SERVER> *eh = nullptr);
-    bool listen(const char *host, int port, uS::TLS::Context sslContext = nullptr, int options = 0, Group<SERVER> *eh = nullptr);
-    void connect(std::string uri, void *user = nullptr, std::map<std::string, std::string> extraHeaders = {}, int timeoutMs = 5000, Group<CLIENT> *eh = nullptr);
-    void upgrade(uv_os_sock_t fd, const char *secKey, SSL *ssl, const char *extensions, size_t extensionsLength, const char *subprotocol, size_t subprotocolLength, Group<SERVER> *serverGroup = nullptr);
+    bool listen(int port, uS::TLS::Context sslContext = nullptr, int options = 0, Group<Role::SERVER> *eh = nullptr);
+    bool listen(const char *host, int port, uS::TLS::Context sslContext = nullptr, int options = 0, Group<Role::SERVER> *eh = nullptr);
+    void connect(std::string uri, void *user = nullptr, std::map<std::string, std::string> extraHeaders = {}, int timeoutMs = 5000, Group<Role::CLIENT> *eh = nullptr);
+    void upgrade(uv_os_sock_t fd, const char *secKey, SSL *ssl, const char *extensions, size_t extensionsLength, const char *subprotocol, size_t subprotocolLength, Group<Role::SERVER> *serverGroup = nullptr);
 
-    Hub(int extensionOptions = 0, bool useDefaultLoop = false, unsigned int maxPayload = 16777216) : uS::Node(LARGE_BUFFER_SIZE, WebSocketProtocol<SERVER, WebSocket<SERVER>>::CONSUME_PRE_PADDING, WebSocketProtocol<SERVER, WebSocket<SERVER>>::CONSUME_POST_PADDING, useDefaultLoop),
-                                             Group<SERVER>(extensionOptions, maxPayload, this, nodeData), Group<CLIENT>(0, maxPayload, this, nodeData) {
+    Hub(int extensionOptions = 0, bool useDefaultLoop = false, unsigned int maxPayload = 16777216) : uS::Node(LARGE_BUFFER_SIZE, WebSocketProtocol<Role::SERVER, WebSocket<Role::SERVER>>::CONSUME_PRE_PADDING, WebSocketProtocol<Role::SERVER, WebSocket<Role::SERVER>>::CONSUME_POST_PADDING, useDefaultLoop),
+                                             Group<Role::SERVER>(extensionOptions, maxPayload, this, nodeData), Group<Role::CLIENT>(0, maxPayload, this, nodeData) {
         inflateInit2(&inflationStream, -15);
         inflationBuffer = new char[LARGE_BUFFER_SIZE];
 
@@ -69,29 +69,29 @@ public:
     using uS::Node::run;
     using uS::Node::poll;
     using uS::Node::getLoop;
-    using Group<SERVER>::onConnection;
-    using Group<CLIENT>::onConnection;
-    using Group<SERVER>::onTransfer;
-    using Group<CLIENT>::onTransfer;
-    using Group<SERVER>::onMessage;
-    using Group<CLIENT>::onMessage;
-    using Group<SERVER>::onDisconnection;
-    using Group<CLIENT>::onDisconnection;
-    using Group<SERVER>::onPing;
-    using Group<CLIENT>::onPing;
-    using Group<SERVER>::onPong;
-    using Group<CLIENT>::onPong;
-    using Group<SERVER>::onError;
-    using Group<CLIENT>::onError;
-    using Group<SERVER>::onHttpRequest;
-    using Group<SERVER>::onHttpData;
-    using Group<SERVER>::onHttpConnection;
-    using Group<SERVER>::onHttpDisconnection;
-    using Group<SERVER>::onHttpUpgrade;
-    using Group<SERVER>::onCancelledHttpRequest;
+    using Group<Role::SERVER>::onConnection;
+    using Group<Role::CLIENT>::onConnection;
+    using Group<Role::SERVER>::onTransfer;
+    using Group<Role::CLIENT>::onTransfer;
+    using Group<Role::SERVER>::onMessage;
+    using Group<Role::CLIENT>::onMessage;
+    using Group<Role::SERVER>::onDisconnection;
+    using Group<Role::CLIENT>::onDisconnection;
+    using Group<Role::SERVER>::onPing;
+    using Group<Role::CLIENT>::onPing;
+    using Group<Role::SERVER>::onPong;
+    using Group<Role::CLIENT>::onPong;
+    using Group<Role::SERVER>::onError;
+    using Group<Role::CLIENT>::onError;
+    using Group<Role::SERVER>::onHttpRequest;
+    using Group<Role::SERVER>::onHttpData;
+    using Group<Role::SERVER>::onHttpConnection;
+    using Group<Role::SERVER>::onHttpDisconnection;
+    using Group<Role::SERVER>::onHttpUpgrade;
+    using Group<Role::SERVER>::onCancelledHttpRequest;
 
-    friend struct WebSocket<SERVER>;
-    friend struct WebSocket<CLIENT>;
+    friend struct WebSocket<Role::SERVER>;
+    friend struct WebSocket<Role::CLIENT>;
 };
 
 }
